@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>住宅完成保証 ROI試算シミュレーター</title>
+<style>
+  :root{
+    --navy:#1E2761;
+    --navy-dark:#141B49;
+    --ice:#CADCFC;
+    --gold:#B8892B;
+    --gold-light:#E8D9B5;
+    --text:#26314A;
+    --muted:#5B6B8C;
+    --card:#F4F7FC;
+    --line:#DCE3F0;
+    --safe:#0E8F6E;
+    --danger:#B23A3A;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Yu Gothic","Hiragino Sans","Noto Sans JP",sans-serif;
+    background:linear-gradient(180deg,#F7F9FD 0%, #EEF2FA 100%);
+    color:var(--text);
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    padding:40px 16px 80px;
+  }
+  .wrap{width:100%;max-width:760px;}
+
+  .header{
+    background:var(--navy); border-radius:16px; padding:34px 32px; color:#fff;
+    position:relative; overflow:hidden; margin-bottom:26px;
+  }
+  .header::after{
+    content:""; position:absolute; right:-40px; top:-60px; width:180px;height:180px;
+    border-radius:50%; background:var(--navy-dark);
+  }
+  .eyebrow{color:var(--gold); font-size:13px; font-weight:700; letter-spacing:2px; margin-bottom:10px; position:relative; z-index:1;}
+  h1{font-size:24px; margin:0 0 10px; position:relative; z-index:1; line-height:1.4;}
+  .lead{color:var(--ice); font-size:14px; line-height:1.7; margin:0; position:relative; z-index:1;}
+
+  .panel{
+    background:#fff; border:1px solid var(--line); border-radius:16px; padding:28px 28px 8px;
+    margin-bottom:24px;
+  }
+  .panel h2{font-size:15px; color:var(--navy); margin:0 0 20px; display:flex; align-items:center; gap:8px;}
+  .panel h2 .step{
+    width:22px;height:22px;border-radius:50%;background:var(--navy);color:#fff;font-size:12px;
+    display:flex;align-items:center;justify-content:center; flex:none;
+  }
+
+  .field{margin-bottom:24px;}
+  .field-top{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px;}
+  .field-label{font-size:13.5px; color:var(--text); font-weight:700;}
+  .field-note{font-size:11.5px; color:var(--muted); margin-top:3px; line-height:1.5;}
+  .field-value{font-size:16px; font-weight:800; color:var(--navy);}
+  .field-value span{font-size:12px; font-weight:400; color:var(--muted); margin-left:2px;}
+
+  input[type=range]{
+    width:100%; height:6px; border-radius:99px; background:var(--line);
+    -webkit-appearance:none; appearance:none; outline:none; cursor:pointer;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; appearance:none; width:20px;height:20px; border-radius:50%;
+    background:var(--gold); border:3px solid #fff; box-shadow:0 0 0 1.5px var(--gold); cursor:pointer;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:20px;height:20px; border-radius:50%; background:var(--gold); border:3px solid #fff;
+    box-shadow:0 0 0 1.5px var(--gold); cursor:pointer;
+  }
+
+  .range-scale{display:flex; justify-content:space-between; font-size:10.5px; color:var(--muted); margin-top:6px;}
+
+  /* Result */
+  .result-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:18px;}
+  @media (max-width:560px){ .result-grid{grid-template-columns:1fr;} }
+  .metric-card{
+    background:var(--card); border-radius:14px; padding:20px;
+  }
+  .metric-card .m-label{font-size:12px; color:var(--muted); margin-bottom:8px;}
+  .metric-card .m-value{font-size:24px; font-weight:800; color:var(--text);}
+  .metric-card .m-value span{font-size:13px; font-weight:400; margin-left:2px; color:var(--muted);}
+  .metric-card.cost .m-value{color:var(--danger);}
+  .metric-card.gain .m-value{color:var(--navy);}
+
+  .net-box{
+    background:var(--navy); border-radius:16px; padding:26px 28px; color:#fff; text-align:center;
+    margin-bottom:8px; position:relative; overflow:hidden;
+  }
+  .net-box .n-label{font-size:13px; color:var(--ice); margin-bottom:8px; letter-spacing:.5px;}
+  .net-box .n-value{font-size:34px; font-weight:800;}
+  .net-box .n-value.negative{color:#F3C8C8;}
+  .net-box .n-sub{font-size:12.5px; color:var(--ice); margin-top:10px; line-height:1.7;}
+
+  .bar-wrap{margin:22px 0 6px;}
+  .bar-row{display:flex; align-items:center; gap:12px; margin-bottom:14px;}
+  .bar-label{width:110px; font-size:12px; color:var(--muted); flex:none;}
+  .bar-track{flex:1; height:22px; background:var(--card); border-radius:6px; overflow:hidden; position:relative;}
+  .bar-fill{height:100%; border-radius:6px; transition:width .5s ease;}
+  .bar-fill.cost{background:var(--danger);}
+  .bar-fill.gain{background:var(--navy);}
+  .bar-num{width:90px; font-size:12.5px; font-weight:700; text-align:right; flex:none;}
+
+  .note-box{
+    background:var(--card); border-radius:10px; padding:14px 18px; font-size:11.5px; color:var(--muted);
+    line-height:1.8; margin-top:16px;
+  }
+
+  footer{text-align:center; margin-top:24px; font-size:11.5px; color:var(--muted); line-height:1.7;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="header">
+    <div class="eyebrow">ROI試算シミュレーター</div>
+    <h1>住宅完成保証、加入コストと未加入の機会損失を試算</h1>
+    <p class="lead">スライダーを動かすだけで、自社の年間実績に基づいた概算が見られます。</p>
+  </div>
+
+  <div class="panel">
+    <h2><span class="step">1</span>自社の年間実績を入力</h2>
+
+    <div class="field">
+      <div class="field-top">
+        <span class="field-label">年間の請負件数</span>
+        <span class="field-value"><span id="valCount">20</span><span>件 / 年</span></span>
+      </div>
+      <input type="range" id="count" min="5" max="100" step="1" value="20">
+      <div class="range-scale"><span>5件</span><span>100件</span></div>
+    </div>
+
+    <div class="field">
+      <div class="field-top">
+        <span class="field-label">平均請負金額</span>
+        <span class="field-value"><span id="valPrice">3,000</span><span>万円 / 件</span></span>
+      </div>
+      <input type="range" id="price" min="1000" max="6000" step="100" value="3000">
+      <div class="range-scale"><span>1,000万円</span><span>6,000万円</span></div>
+    </div>
+
+    <div class="field">
+      <div class="field-top">
+        <span class="field-label">平均粗利率</span>
+        <span class="field-value"><span id="valMargin">20</span><span>%</span></span>
+      </div>
+      <input type="range" id="margin" min="5" max="35" step="1" value="20">
+      <div class="range-scale"><span>5%</span><span>35%</span></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2><span class="step">2</span>保証条件の前提を調整</h2>
+
+    <div class="field">
+      <div class="field-top">
+        <span class="field-label">保証料率（請負金額に対する目安）</span>
+        <span class="field-value"><span id="valRate">0.3</span><span>%</span></span>
+      </div>
+      <input type="range" id="rate" min="0.1" max="0.6" step="0.05" value="0.3">
+      <div class="range-scale"><span>0.1%</span><span>0.6%</span></div>
+      <div class="field-note">実際の保証料率は保証機関・請負金額により異なります。目安として調整してください。</div>
+    </div>
+
+    <div class="field">
+      <div class="field-top">
+        <span class="field-label">「保証なし」を理由に離脱すると想定されるお客様の割合</span>
+        <span class="field-value"><span id="valChurn">5</span><span>%</span></span>
+      </div>
+      <input type="range" id="churn" min="0" max="20" step="1" value="5">
+      <div class="range-scale"><span>0%</span><span>20%</span></div>
+      <div class="field-note">比較検討段階で「保証あり」の競合他社に流れると見込む割合の仮定値です。</div>
+    </div>
+  </div>
+
+  <div class="panel" style="padding-bottom:28px;">
+    <h2><span class="step">3</span>試算結果</h2>
+
+    <div class="result-grid">
+      <div class="metric-card cost">
+        <div class="m-label">年間の保証料コスト（目安）</div>
+        <div class="m-value" id="costValue">0<span>万円</span></div>
+      </div>
+      <div class="metric-card gain">
+        <div class="m-label">未加入による年間の逸失利益（目安）</div>
+        <div class="m-value" id="gainValue">0<span>万円</span></div>
+      </div>
+    </div>
+
+    <div class="bar-wrap">
+      <div class="bar-row">
+        <div class="bar-label">保証料コスト</div>
+        <div class="bar-track"><div class="bar-fill cost" id="barCost" style="width:0%"></div></div>
+        <div class="bar-num" id="barCostNum">0万円</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">未加入の逸失利益</div>
+        <div class="bar-track"><div class="bar-fill gain" id="barGain" style="width:0%"></div></div>
+        <div class="bar-num" id="barGainNum">0万円</div>
+      </div>
+    </div>
+
+    <div class="net-box">
+      <div class="n-label">保証に加入した場合の年間収支メリット（目安）</div>
+      <div class="n-value" id="netValue">+0万円</div>
+      <div class="n-sub" id="netSub"></div>
+    </div>
+
+    <div class="note-box">
+      本シミュレーターは説明・検討用の簡易概算です。実際の保証料率・保証上限・成約率への影響は、保証機関の条件や市場状況により異なります。正式な金額は各保証機関の見積もりでご確認ください。
+    </div>
+  </div>
+
+  <footer>住宅完成保証 導入検討のための参考資料</footer>
+</div>
+
+<script>
+const ids = ['count','price','margin','rate','churn'];
+const els = {};
+ids.forEach(id => els[id] = document.getElementById(id));
+
+const valEls = {
+  count: document.getElementById('valCount'),
+  price: document.getElementById('valPrice'),
+  margin: document.getElementById('valMargin'),
+  rate: document.getElementById('valRate'),
+  churn: document.getElementById('valChurn'),
+};
+
+function formatMan(n){
+  return Math.round(n).toLocaleString('ja-JP');
+}
+
+function recalc(){
+  const count = Number(els.count.value);
+  const priceMan = Number(els.price.value); // 万円
+  const marginPct = Number(els.margin.value) / 100;
+  const ratePct = Number(els.rate.value) / 100;
+  const churnPct = Number(els.churn.value) / 100;
+
+  valEls.count.textContent = count;
+  valEls.price.textContent = priceMan.toLocaleString('ja-JP');
+  valEls.margin.textContent = Number(els.margin.value);
+  valEls.rate.textContent = Number(els.rate.value).toFixed(2).replace(/\.?0+$/,'') || Number(els.rate.value);
+  valEls.churn.textContent = Number(els.churn.value);
+
+  // 年間保証料コスト（万円）= 件数 × 平均請負金額 × 保証料率
+  const annualCost = count * priceMan * ratePct;
+
+  // 未加入による年間逸失利益（万円）= 件数 × 離脱率 × 平均請負金額 × 粗利率
+  const annualLoss = count * churnPct * priceMan * marginPct;
+
+  const net = annualLoss - annualCost;
+
+  document.getElementById('costValue').innerHTML = formatMan(annualCost) + '<span>万円</span>';
+  document.getElementById('gainValue').innerHTML = formatMan(annualLoss) + '<span>万円</span>';
+
+  const maxVal = Math.max(annualCost, annualLoss, 1);
+  document.getElementById('barCost').style.width = (annualCost / maxVal * 100) + '%';
+  document.getElementById('barGain').style.width = (annualLoss / maxVal * 100) + '%';
+  document.getElementById('barCostNum').textContent = formatMan(annualCost) + '万円';
+  document.getElementById('barGainNum').textContent = formatMan(annualLoss) + '万円';
+
+  const netValueEl = document.getElementById('netValue');
+  const netSubEl = document.getElementById('netSub');
+  if(net >= 0){
+    netValueEl.textContent = '+' + formatMan(net) + '万円';
+    netValueEl.classList.remove('negative');
+    netSubEl.textContent = '保証料コストを差し引いても、未加入によって失う可能性のある利益の方が大きい試算です。';
+  } else {
+    netValueEl.textContent = formatMan(net) + '万円';
+    netValueEl.classList.add('negative');
+    netSubEl.textContent = 'この前提では保証料コストが逸失利益を上回りますが、離脱率や粗利率の仮定を見直して再度ご確認ください。';
+  }
+}
+
+ids.forEach(id => els[id].addEventListener('input', recalc));
+recalc();
+</script>
+</body>
+</html>
